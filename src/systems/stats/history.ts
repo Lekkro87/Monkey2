@@ -2,7 +2,7 @@ import { CATEGORIES, CATEGORY_IDS } from '@/data/categories';
 import { COMPONENT_TYPE_LABELS } from '@/data/componentCatalog';
 import { addNews } from '@/simulation/news';
 import type { ComponentType, GameState } from '@/types';
-import { pushCapped } from '@/utils/math';
+import { appendCapped } from '@/utils/math';
 import { typePriceTrend } from '@/systems/components/market';
 import { updateValuation } from '@/systems/finance/accounts';
 import { overallPlayerShare, PLAYER_OWNER } from '@/systems/market/demand';
@@ -18,7 +18,7 @@ export function recordWeeklySnapshot(state: GameState): void {
   if (state.finance.cash > state.finance.lifetime.peakCash) state.finance.lifetime.peakCash = state.finance.cash;
   const demandIndex = CATEGORY_IDS.reduce((a, c) => a + state.markets[c].trend * CATEGORIES[c].baseMonthlyUnits, 0) / CATEGORY_IDS.reduce((a, c) => a + CATEGORIES[c].baseMonthlyUnits, 0);
   stats.demandIndex = demandIndex;
-  pushCapped(
+  state.history = appendCapped(
     state.history,
     {
       day: state.time.day,

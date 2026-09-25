@@ -28,6 +28,19 @@ describe('Simulation (Grundlagen)', () => {
     expect(JSON.stringify(loaded.competitors)).toBe(JSON.stringify(direct.competitors));
   });
 
+  it('mutiert geteilte (eingefrorene) Zustandsteile nie in-place', () => {
+    const deepFreeze = <T,>(value: T): T => {
+      if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+        Object.freeze(value);
+        for (const key of Object.keys(value)) deepFreeze((value as Record<string, unknown>)[key]);
+      }
+      return value;
+    };
+    let state = newTestGame('normal', 3);
+    for (let i = 0; i < 50; i++) state = simulateDays(deepFreeze(state), 12);
+    expect(state.time.day).toBe(600);
+  });
+
   it('verändert den Eingabezustand nicht', () => {
     const base = newTestGame('normal', 99);
     const snapshot = JSON.stringify(base);

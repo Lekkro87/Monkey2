@@ -5,7 +5,7 @@ import { monthIndex } from '@/simulation/calendar';
 import { additive, multiplier } from '@/simulation/modifiers';
 import { gaussian, randomRange, type RngHolder } from '@/simulation/rng';
 import type { CurrencyCode, EconomyState, GameState } from '@/types';
-import { clamp, pushCapped } from '@/utils/math';
+import { appendCapped, clamp } from '@/utils/math';
 
 const BASE_ENERGY_PRICE = 0.24;
 
@@ -60,7 +60,7 @@ export function updateEconomy(state: GameState): void {
 
 export function recordEconomySnapshot(state: GameState): void {
   const eco = state.economy;
-  pushCapped(
+  eco.history = appendCapped(
     eco.history,
     {
       month: monthIndex(state.time.day),

@@ -1,6 +1,6 @@
 import { monthIndex } from '@/simulation/calendar';
 import type { GameState, MonthlyReport } from '@/types';
-import { pushCapped } from '@/utils/math';
+import { appendCapped } from '@/utils/math';
 import { balanceSheet, computeCreditRating, updateValuation } from './accounts';
 import { addTransaction, emptyLedger, FINANCING_CATEGORIES, INVESTING_CATEGORIES, LEDGER_CATEGORIES, ledgerOpex, ledgerRevenue } from './ledger';
 
@@ -70,7 +70,7 @@ export function closeMonth(state: GameState): MonthlyReport {
     valuation: finance.valuation,
     ledger: { ...ledger },
   };
-  pushCapped(finance.months, report, 600);
+  finance.months = appendCapped(finance.months, report, 600);
   finance.lifetime.revenue += revenue;
   finance.lifetime.netIncome += netIncome;
   finance.ledger = emptyLedger();

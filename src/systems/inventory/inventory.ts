@@ -3,7 +3,9 @@ import { OFFICES, OVERFLOW_FEE_PER_UNIT_DAY, WAREHOUSE_TYPES } from '@/data/faci
 import { CommandError, ensure, nextId } from '@/simulation/commands';
 import { addNews } from '@/simulation/news';
 import type { ComponentSku, GameState, WarehouseKind } from '@/types';
-import { addTransaction } from '@/systems/finance/ledger';
+import { addTransaction, recordCogs } from '@/systems/finance/ledger';
+import { skuPriceEur } from '@/systems/components/catalog';
+import { clamp } from '@/utils/math';
 
 export function componentStock(state: GameState, sku: ComponentSku): number {
   if (sku.inhouseProductId) return state.inventory.products[sku.inhouseProductId]?.qty ?? 0;
@@ -150,4 +152,47 @@ export function closeWarehouse(state: GameState, warehouseId: string): string {
   ensure(usedStorage(state) <= remaining, 'Das Lager ist noch belegt. Reduziere zuerst den Bestand.');
   state.warehouses = state.warehouses.filter((w) => w.id !== warehouseId);
   return `${warehouse.name} wurde gekündigt.`;
+}
+
+/** Anteil des Marktpreises, den Restpostenhändler für Komponenten zahlen. */
+export const COMPONENT_RESALE_FACTOR = 0.6;
+/** Anteil des Verkaufspreises, den Restpostenhändler für Fertigwaren zahlen. */
+export const PRODUCT_CLEARANCE_FACTOR = 0.45;
+
+export function componentResalePrice(state: GameState, sku: ComponentSku): number {
+  return skuPriceEur(state, sku) * COMPONENT_RESALE_FACTOR;
+}
+
+/** Verkauft Komponenten an einen Restpostenhändler (Liquidität gegen Abschlag). */
+export function sellComponents(state: GameState, skuId: string, quantity: number): string {
+  const sku = state.components.skus[skuId];
+  ensure(sku && !sku.inhouseProductId, 'Unbekannte Komponente.');
+  const entry = state.inventory.components[skuId];
+  const qty = Math.floor(quantity);
+  ensure(qty >= 1, 'Bitte mindestens 1 Stück angeben.');
+  ensure(entry && entry.qty >= qty, `Nur ${Math.floor(entry?.qty ?? 0).toLocaleString('de-DE')} Stück auf Lager.`);
+  const proceeds = qty * componentResalePrice(state, sku);
+  const bookValue = qty * entry.avgCost;
+  entry.qty -= qty;
+  // Erlös fließt zurück in den Einkauf (Bestandsabbau), der Buchverlust wird als Materialaufwand erfasst.
+  addTransaction(state, 'purchases', proceeds);
+  if (bookValue > proceeds) recordCogs(state, bookValue - proceeds);
+  return `${qty.toLocaleString('de-DE')} × ${sku.name} für ${Math.round(proceeds).toLocaleString('de-DE')} € verkauft.`;
+}
+
+/** Verkauft Fertigwaren als Restposten an Großhändler – schnell, aber mit Imageschaden. */
+export function clearProductStock(state: GameState, productId: string, quantity: number): string {
+  const product = state.products.find((p) => p.id === productId);
+  ensure(product, 'Produkt nicht gefunden.');
+  const entry = state.inventory.products[productId];
+  const qty = Math.floor(quantity);
+  ensure(qty >= 1, 'Bitte mindestens 1 Stück angeben.');
+  ensure(entry && entry.qty >= qty, `Nur ${Math.floor(entry?.qty ?? 0).toLocaleString('de-DE')} Stück auf Lager.`);
+  const proceeds = qty * product.price * PRODUCT_CLEARANCE_FACTOR;
+  entry.qty -= qty;
+  addTransaction(state, 'sales', proceeds);
+  recordCogs(state, qty * entry.avgCost);
+  const share = qty / Math.max(1, product.sales.unitsLast30 + qty);
+  state.brand.premium = clamp(state.brand.premium - Math.min(3, share * 4), 0, 100);
+  return `${qty.toLocaleString('de-DE')} × ${product.name} als Restposten für ${Math.round(proceeds).toLocaleString('de-DE')} € verkauft.`;
 }

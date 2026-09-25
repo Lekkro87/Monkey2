@@ -19,12 +19,24 @@ export function tryExec(state: GameState, command: Command): { state: GameState;
   return result.ok ? { state: next } : { state, error: result.error };
 }
 
+/**
+ * Friert einen Zustand tief ein. Tests simulieren immer auf eingefrorenen Snapshots,
+ * damit jede versehentliche In-place-Mutation geteilter Zustandsteile sofort auffällt.
+ */
+export function deepFreeze<T>(value: T): T {
+  if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+    Object.freeze(value);
+    for (const key of Object.keys(value)) deepFreeze((value as Record<string, unknown>)[key]);
+  }
+  return value;
+}
+
 export function advance(state: GameState, days: number, step = 10): GameState {
   let current = state;
   let remaining = days;
   while (remaining > 0) {
     const chunk = Math.min(step, remaining);
-    current = simulateDays(current, chunk);
+    current = simulateDays(deepFreeze(current), chunk);
     remaining -= chunk;
   }
   return current;
@@ -33,6 +45,6 @@ export function advance(state: GameState, days: number, step = 10): GameState {
 /** Simuliert, bis die Bedingung erfüllt ist (max. `limit` Tage). */
 export function advanceUntil(state: GameState, predicate: (s: GameState) => boolean, limit = 400): GameState {
   let current = state;
-  for (let i = 0; i < limit && !predicate(current); i++) current = simulateDays(current, 1);
+  for (let i = 0; i < limit && !predicate(current); i++) current = simulateDays(deepFreeze(current), 1);
   return current;
 }

@@ -58,6 +58,8 @@ export function weeklyWorkforceUpdate(state: GameState): void {
   };
 
   const quitters: Employee[] = [];
+  // Copy-on-Write: die Personalliste wird zwischen Snapshots geteilt.
+  workforce.employees = workforce.employees.map((e) => ({ ...e }));
   for (const employee of workforce.employees) {
     const target = motivationTarget(state, employee, context);
     employee.motivation = clamp(employee.motivation + (target - employee.motivation) * 0.22 + gaussian(state, 0, 1.2), 0, 100);

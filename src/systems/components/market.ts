@@ -35,6 +35,8 @@ function releaseGeneration(state: GameState, familyId: string): void {
   const generation = previous + 1;
   const day = state.time.day;
   const created: ComponentSku[] = [];
+  // Copy-on-Write: der Komponentenkatalog wird zwischen Snapshots geteilt.
+  state.components.skus = { ...state.components.skus };
   for (const model of family.models) {
     if ((model.fromGeneration ?? 1) > generation) continue;
     const sku = createSku(family, model, generation, day, state.economy.priceLevel, state);

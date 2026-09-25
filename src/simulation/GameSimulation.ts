@@ -112,13 +112,37 @@ export function runDay(state: GameState): void {
 }
 
 /**
+ * Tiefe Kopie aller Zustandsteile, die sich täglich ändern. Selten geänderte Teile
+ * (Historie, Nachrichten, Personal- und Bewerberlisten, Komponentenkatalog, Monatsberichte)
+ * werden geteilt und von den Systemen ausschließlich per Copy-on-Write ersetzt.
+ * Das spart Kopieraufwand und hält Referenzen für die UI stabil.
+ */
+export function cloneForTick(state: GameState): GameState {
+  const { history, news, workforce, components, finance, economy, ...rest } = state;
+  const { employees, candidates, ...workforceRest } = workforce;
+  const { skus, ...componentsRest } = components;
+  const { months, ...financeRest } = finance;
+  const { history: economyHistory, ...economyRest } = economy;
+  const clone = structuredClone(rest);
+  return {
+    ...clone,
+    history,
+    news,
+    workforce: { ...structuredClone(workforceRest), employees, candidates },
+    components: { ...structuredClone(componentsRest), skus },
+    finance: { ...structuredClone(financeRest), months },
+    economy: { ...structuredClone(economyRest), history: economyHistory },
+  };
+}
+
+/**
  * Simuliert mehrere Tage. Die Simulation arbeitet aus Performancegründen auf einer
  * tiefen Arbeitskopie (statt Immer-Drafts); der übergebene Zustand bleibt unverändert,
  * sodass UI und Speicherstände immer konsistente, unveränderliche Snapshots sehen.
  */
 export function simulateDays(state: GameState, days: number): GameState {
   if (days <= 0 || state.status === 'bankrupt') return state;
-  const working = structuredClone(state) as GameState;
+  const working = cloneForTick(state);
   for (let i = 0; i < days; i++) {
     if (working.status === 'bankrupt') break;
     runDay(working);

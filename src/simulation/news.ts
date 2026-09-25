@@ -10,6 +10,7 @@ export function addNews(
   title: string,
   body?: string,
 ): void {
-  state.news.unshift({ id: nextId(state, 'news'), day: state.time.day, category, tone, title, body });
-  if (state.news.length > MAX_NEWS) state.news.length = MAX_NEWS;
+  // Copy-on-Write: die Nachrichtenliste wird zwischen Snapshots geteilt.
+  const item = { id: nextId(state, 'news'), day: state.time.day, category, tone, title, body };
+  state.news = [item, ...state.news.slice(0, MAX_NEWS - 1)];
 }

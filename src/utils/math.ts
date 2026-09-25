@@ -46,6 +46,12 @@ export function pushCapped<T>(list: T[], item: T, cap: number): void {
   if (list.length > cap) list.splice(0, list.length - cap);
 }
 
+/** Unveränderliche Variante von pushCapped (für geteilte Listen, Copy-on-Write). */
+export function appendCapped<T>(list: readonly T[], item: T, cap: number): T[] {
+  const start = Math.max(0, list.length + 1 - cap);
+  return [...list.slice(start), item];
+}
+
 export function percentChange(current: number, previous: number): number | null {
   if (!Number.isFinite(previous) || Math.abs(previous) < 1e-9) return null;
   return (current - previous) / Math.abs(previous);
