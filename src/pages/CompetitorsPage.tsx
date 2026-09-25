@@ -9,12 +9,11 @@ import { CategoryIcon } from '@/components/icons';
 import { Badge } from '@/components/ui/Badge';
 import { Card, PageHeader } from '@/components/ui/Card';
 import { Select } from '@/components/ui/Form';
-import { KeyValue } from '@/components/ui/Stat';
 import { formatDate } from '@/simulation/calendar';
 import { OTHER_OWNER, PLAYER_OWNER } from '@/systems/market/demand';
 import { useGameStore } from '@/store/gameStore';
 import type { Competitor, GameState, ProductCategoryId } from '@/types';
-import { formatMoney, formatMoneyCompact, formatNumber, formatPercent } from '@/utils/format';
+import { formatCompact, formatMoney, formatMoneyCompact, formatNumber, formatPercent } from '@/utils/format';
 import { TIER_LABELS } from '@/utils/skuFormat';
 
 function ownerColor(id: string): string {
@@ -57,16 +56,24 @@ function CompetitorCard({ competitor, selected, onSelect }: { competitor: Compet
         </div>
         <Sparkline values={competitor.revenueHistory.slice(-24)} color={ownerColor(competitor.id)} width={96} height={30} />
       </div>
-      <div className="mt-2 grid grid-cols-2 gap-x-4 text-xs">
-        <KeyValue label="Marktanteil" value={formatPercent(share)} />
-        <KeyValue label="Gewinn/Monat" value={<span className={competitor.profitLastMonth < 0 ? 'text-red-300' : ''}>{formatMoneyCompact(competitor.profitLastMonth)}</span>} />
-        <KeyValue label="Börsenwert" value={formatMoneyCompact(competitor.valuation)} />
-        <KeyValue label="Aktie" value={formatMoney(competitor.sharePrice, 2)} />
-        <KeyValue label="Bekanntheit" value={formatPercent(competitor.brand.awareness[home], 0)} />
-        <KeyValue label="Technologie" value={competitor.techLead >= 0 ? `+${formatNumber(competitor.techLead, 1)} J.` : `${formatNumber(competitor.techLead, 1)} J.`} />
-        <KeyValue label="Mitarbeitende" value={formatNumber(competitor.employees)} />
-        <KeyValue label="Aktive Produkte" value={formatNumber(active.length)} />
-      </div>
+      <dl className="mt-3 grid grid-cols-3 gap-x-3 gap-y-2 text-xs">
+        {[
+          ['Marktanteil', formatPercent(share)],
+          ['Gewinn/Monat', formatMoneyCompact(competitor.profitLastMonth)],
+          ['Börsenwert', formatMoneyCompact(competitor.valuation)],
+          ['Aktie', formatMoney(competitor.sharePrice, 2)],
+          ['Bekanntheit', formatPercent(competitor.brand.awareness[home], 0)],
+          ['Technologie', `${competitor.techLead >= 0 ? '+' : ''}${formatNumber(competitor.techLead, 1)} J.`],
+          ['Mitarbeitende', formatCompact(competitor.employees)],
+          ['Aktive Produkte', formatNumber(active.length)],
+          ['Werke', formatNumber(competitor.factories)],
+        ].map(([label, value]) => (
+          <div key={label} className="min-w-0">
+            <dt className="truncate text-[11px] text-muted">{label}</dt>
+            <dd className={clsx('truncate font-semibold tabular', label === 'Gewinn/Monat' && competitor.profitLastMonth < 0 && 'text-red-300')}>{value}</dd>
+          </div>
+        ))}
+      </dl>
     </button>
   );
 }

@@ -197,7 +197,8 @@ function autoReorder(state: GameState, line: ProductionLine, product: Product, d
   const totalCost = plans.reduce((a, p) => a + p.missingUnits * p.unitPrice, 0);
   const budget = state.finance.cash - AUTO_ORDER_RESERVE;
   if (budget <= 0) {
-    if (line.status !== 'stalled') line.stallReason = 'Auto-Einkauf pausiert: nicht genügend Kapital.';
+    const note = `Auto-Einkauf pausiert – Kapital unter ${AUTO_ORDER_RESERVE.toLocaleString('de-DE')} € Reserve.`;
+    line.stallReason = line.status === 'stalled' && line.stallReason ? `${line.stallReason} ${note}` : note;
     return;
   }
   const scale = Math.min(1, (budget * 0.95) / Math.max(1, totalCost));

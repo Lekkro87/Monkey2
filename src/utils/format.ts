@@ -41,7 +41,8 @@ export function formatCompact(value: number): string {
 /** Anteil (0–1) als Prozent, z. B. 0.084 → „8,4 %“. */
 export function formatPercent(ratio: number, digits = 1): string {
   if (!Number.isFinite(ratio)) return '–';
-  if (ratio > 0 && ratio < 0.001 && digits <= 1) return '< 0,1 %';
+  const smallest = 10 ** -digits;
+  if (ratio > 0 && ratio * 100 < smallest) return `< ${formatNumber(smallest, digits)} %`;
   return `${formatNumber(ratio * 100, digits)} %`;
 }
 
@@ -63,4 +64,10 @@ export function formatScore(value: number): string {
 
 export function formatRating(value: number): string {
   return `${formatNumber(value, 1)} / 10`;
+}
+
+/** Anzahl Tage mit korrekter Einzahl/Mehrzahl, z. B. „1 Tag“, „12 Tage“. */
+export function formatDays(days: number): string {
+  const rounded = Math.round(days);
+  return `${formatNumber(rounded)} ${rounded === 1 ? 'Tag' : 'Tage'}`;
 }

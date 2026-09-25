@@ -14,7 +14,7 @@ import { DEV_PHASES } from '@/systems/products/phases';
 import { isCategoryUnlocked } from '@/systems/research/effects';
 import { useGameStore } from '@/store/gameStore';
 import type { GameState, ProductStatus } from '@/types';
-import { formatMoney, formatNumber, formatPercent } from '@/utils/format';
+import { formatDays, formatMoney, formatNumber, formatPercent } from '@/utils/format';
 
 const ORDER: ProductStatus[] = ['ready', 'on_sale', 'development', 'draft', 'discontinued'];
 
@@ -110,10 +110,10 @@ export default function ProductsPage() {
                   <td className="px-3 py-2.5">
                     <StatusBadge status={row.status} />
                     {row.status === 'development' && (
-                      <div className="mt-1.5 w-36">
+                      <div className="mt-1.5 w-44">
                         <ProgressBar value={row.phaseProgress} height="h-1" />
                         <div className="mt-0.5 text-[10px] text-muted">
-                          {row.blocked ? <span className="text-amber-300">{row.blocked}</span> : `${row.phase}${row.remaining ? ` · ca. ${row.remaining} Tage` : ''}`}
+                          {row.blocked ? <span className="text-amber-300">{row.blocked}</span> : `${row.phase}${row.remaining ? ` · ca. ${formatDays(row.remaining)}` : ''}`}
                         </div>
                       </div>
                     )}

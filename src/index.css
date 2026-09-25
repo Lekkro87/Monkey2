@@ -89,3 +89,10 @@ input[type='range'] {
 input[type='number']::-webkit-inner-spin-button {
   opacity: 0.4;
 }
+
+@layer base {
+  /* Grid-Elemente dürfen schmaler als ihr Inhalt werden – verhindert horizontales Überlaufen auf kleinen Bildschirmen. */
+  .grid > * {
+    min-width: 0;
+  }
+}

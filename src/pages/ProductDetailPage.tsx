@@ -31,7 +31,7 @@ import { estimateRemainingDays } from '@/systems/products/development';
 import { DEV_PHASES } from '@/systems/products/phases';
 import { useGameStore } from '@/store/gameStore';
 import type { Priority, ReviewCategory, SegmentId } from '@/types';
-import { formatMoney, formatNumber, formatPercent } from '@/utils/format';
+import { formatDays, formatMoney, formatNumber, formatPercent } from '@/utils/format';
 
 export default function ProductDetailPage() {
   const { productId } = useParams();
@@ -135,7 +135,7 @@ export default function ProductDetailPage() {
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
             <div className="text-sm">
               Phase <strong>{DEV_PHASES[product.development.phaseIndex].name}</strong> · {formatPercent(product.development.phaseProgress, 0)} ·{' '}
-              {remaining !== null ? `noch ca. ${remaining} Tage` : 'keine Entwicklungskapazität'} · ausgegeben {formatMoney(product.development.spent)} von {formatMoney(product.development.totalBudget)}
+              {remaining !== null ? `noch ca. ${formatDays(remaining)}` : 'keine Entwicklungskapazität'} · ausgegeben {formatMoney(product.development.spent)} von {formatMoney(product.development.totalBudget)}
             </div>
             <Segmented
               size="xs"

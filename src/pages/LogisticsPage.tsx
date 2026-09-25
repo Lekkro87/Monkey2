@@ -278,37 +278,39 @@ function NetworkTab() {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <Card title="Transportwege" subtitle="Für Komponenten-Bestellungen. LKW fährt nur innerhalb eines Kontinents." bodyClassName="p-0">
-        <table className="w-full text-sm">
-          <thead className="bg-panel-2 text-xs text-muted">
-            <tr>
-              <th className="px-4 py-2 text-left font-medium">Art</th>
-              <th className="px-3 py-2 text-right font-medium">Regional</th>
-              <th className="px-3 py-2 text-right font-medium">Interkontinental</th>
-              <th className="px-3 py-2 text-right font-medium">Kosten/Einheit</th>
-              <th className="px-3 py-2 text-right font-medium">Verzögerung</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(Object.keys(SHIPPING_MODES) as ShippingMode[]).map((mode) => {
-              const def = SHIPPING_MODES[mode];
-              const Icon = MODE_ICONS[mode];
-              return (
-                <tr key={mode} className="border-t border-line/50">
-                  <td className="px-4 py-2">
-                    <div className="flex items-center gap-2 font-medium">
-                      <Icon size={14} className="text-muted" /> {def.name}
-                    </div>
-                    <div className="text-[11px] text-muted">{def.description}</div>
-                  </td>
-                  <td className="px-3 py-2 text-right tabular">{def.domesticDays} T.</td>
-                  <td className="px-3 py-2 text-right tabular">{def.intercontinentalDays !== null ? `${def.intercontinentalDays} T.` : '–'}</td>
-                  <td className="px-3 py-2 text-right tabular">{formatMoney(def.costPerVolume * logisticsCostFactor(game), 2)}</td>
-                  <td className="px-3 py-2 text-right tabular">{formatPercent(def.delayRisk, 0)}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-panel-2 text-xs text-muted">
+              <tr>
+                <th className="px-4 py-2 text-left font-medium">Art</th>
+                <th className="px-3 py-2 text-right font-medium">Regional</th>
+                <th className="px-3 py-2 text-right font-medium">Interkontinental</th>
+                <th className="px-3 py-2 text-right font-medium">Kosten/Einheit</th>
+                <th className="px-3 py-2 text-right font-medium">Verzögerung</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(Object.keys(SHIPPING_MODES) as ShippingMode[]).map((mode) => {
+                const def = SHIPPING_MODES[mode];
+                const Icon = MODE_ICONS[mode];
+                return (
+                  <tr key={mode} className="border-t border-line/50">
+                    <td className="px-4 py-2">
+                      <div className="flex items-center gap-2 font-medium">
+                        <Icon size={14} className="text-muted" /> {def.name}
+                      </div>
+                      <div className="text-[11px] text-muted">{def.description}</div>
+                    </td>
+                    <td className="px-3 py-2 text-right tabular">{def.domesticDays} T.</td>
+                    <td className="px-3 py-2 text-right tabular">{def.intercontinentalDays !== null ? `${def.intercontinentalDays} T.` : '–'}</td>
+                    <td className="px-3 py-2 text-right tabular">{formatMoney(def.costPerVolume * logisticsCostFactor(game), 2)}</td>
+                    <td className="px-3 py-2 text-right tabular">{formatPercent(def.delayRisk, 0)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </Card>
       <Card title="Regionale Verteilzentren" subtitle="Senken die Exportkosten in eine Region um 40 %. Zölle bleiben bestehen.">
         {regions.length === 0 ? (

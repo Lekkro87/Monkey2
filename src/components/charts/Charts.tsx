@@ -71,7 +71,7 @@ export function TimeSeriesChart({ data, xKey, series, kind = 'line', height = 22
           <ChartComponent data={data} margin={{ top: 6, right: 8, left: 0, bottom: 0 }}>
             <CartesianGrid stroke={CHART.grid} vertical={false} />
             <XAxis dataKey={xKey} stroke={CHART.axis} tick={{ fill: CHART.tick, fontSize: 11 }} tickLine={false} minTickGap={24} />
-            <YAxis stroke={CHART.axis} tick={{ fill: CHART.tick, fontSize: 11 }} tickLine={false} axisLine={false} width={64} tickFormatter={axisFormat ?? format} />
+            <YAxis stroke={CHART.axis} tick={{ fill: CHART.tick, fontSize: 11 }} tickLine={false} axisLine={false} width={84} tickFormatter={axisFormat ?? format} />
             <Tooltip content={<ChartTooltip format={format} labelFormat={labelFormat} />} cursor={{ stroke: CHART.tick, strokeWidth: 1 }} />
             {series.map((s, i) =>
               kind === 'area' ? (
@@ -118,7 +118,7 @@ export function SignedBarChart({ data, xKey, valueKey, label, height = 200, form
         <BarChart data={data} margin={{ top: 6, right: 8, left: 0, bottom: 0 }} barCategoryGap={2}>
           <CartesianGrid stroke={CHART.grid} vertical={false} />
           <XAxis dataKey={xKey} stroke={CHART.axis} tick={{ fill: CHART.tick, fontSize: 11 }} tickLine={false} minTickGap={24} />
-          <YAxis stroke={CHART.axis} tick={{ fill: CHART.tick, fontSize: 11 }} tickLine={false} axisLine={false} width={64} tickFormatter={axisFormat ?? format} />
+          <YAxis stroke={CHART.axis} tick={{ fill: CHART.tick, fontSize: 11 }} tickLine={false} axisLine={false} width={84} tickFormatter={axisFormat ?? format} />
           <ReferenceLine y={0} stroke={CHART.axis} />
           <Tooltip content={<ChartTooltip format={format} labelFormat={labelFormat} />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
           <Bar dataKey={valueKey} name={label} radius={[4, 4, 0, 0]} isAnimationActive={false}>

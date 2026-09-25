@@ -9,10 +9,10 @@ import { Modal } from '@/components/ui/Modal';
 import { KeyValue } from '@/components/ui/Stat';
 import { getManufacturerName } from '@/services/brandLicense';
 import { componentStock } from '@/systems/inventory/inventory';
-import { billOfMaterials, buildableUnits } from '@/systems/production/production';
+import { AUTO_ORDER_RESERVE, billOfMaterials, buildableUnits } from '@/systems/production/production';
 import { placeOrder, quantityInTransit, quotePurchase, shippingOptions } from '@/systems/supply/purchasing';
 import { useGameStore } from '@/store/gameStore';
-import type { Product, ShippingMode } from '@/types';
+import type { GameState, Product, ShippingMode } from '@/types';
 import { formatMoney, formatNumber } from '@/utils/format';
 import { skuSpecLabel } from '@/utils/skuFormat';
 
@@ -65,16 +65,11 @@ export function BomPanel({ product }: { product: Product }) {
   );
 }
 
-/** Bestellt alle Komponenten für eine gewünschte Stückzahl in einem Schritt. */
-function KitOrderModal({ product, onClose }: { product: Product; onClose: () => void }) {
-  const game = useGameStore((s) => s.game!);
-  const execute = useGameStore((s) => s.execute);
-  const [units, setUnits] = useState(50);
-  const [mode, setMode] = useState<ShippingMode>('distributor');
-  const [onlyMissing, setOnlyMissing] = useState(true);
-  const bom = billOfMaterials(game, product).filter((item) => !item.sku.inhouseProductId);
+type BomItem = ReturnType<typeof billOfMaterials>[number];
 
-  const lines = bom.map((item) => {
+/** Bestellpositionen für eine Stückzahl (Großhandel ist auf 1.000 Stück je Bestellung begrenzt). */
+function kitLines(game: GameState, bom: BomItem[], units: number, mode: ShippingMode, onlyMissing: boolean) {
+  return bom.map((item) => {
     const available = onlyMissing ? componentStock(game, item.sku) + quantityInTransit(game, item.sku.id) : 0;
     const quantity = Math.max(0, Math.ceil(units * item.quantity - available));
     const usable = shippingOptions(game, item.sku).find((o) => o.mode === mode)?.available ? mode : 'ship';
@@ -83,8 +78,42 @@ function KitOrderModal({ product, onClose }: { product: Product; onClose: () => 
     const quote = qty > 0 ? quotePurchase(game, item.sku, qty, usable) : null;
     return { item, qty, quote, usable, capped: limit !== null && quantity > limit };
   });
-  const total = lines.reduce((a, l) => a + (l.quote?.total ?? 0), 0);
+}
+
+function kitTotal(lines: ReturnType<typeof kitLines>): number {
+  return lines.reduce((a, l) => a + (l.quote?.total ?? 0), 0);
+}
+
+/** Größte Stückzahl, deren Komponenten bezahlt werden können, ohne die Liquiditätsreserve anzutasten. */
+function affordableUnits(game: GameState, bom: BomItem[], mode: ShippingMode, onlyMissing: boolean): number {
+  const cash = game.finance.cash - AUTO_ORDER_RESERVE;
+  if (cash <= 0) return 0;
+  let low = 0;
+  let high = 1;
+  while (high < 1_000_000 && kitTotal(kitLines(game, bom, high, mode, onlyMissing)) <= cash) {
+    low = high;
+    high *= 2;
+  }
+  while (high - low > 1) {
+    const mid = Math.floor((low + high) / 2);
+    if (kitTotal(kitLines(game, bom, mid, mode, onlyMissing)) <= cash) low = mid;
+    else high = mid;
+  }
+  return low;
+}
+
+/** Bestellt alle Komponenten für eine gewünschte Stückzahl in einem Schritt. */
+function KitOrderModal({ product, onClose }: { product: Product; onClose: () => void }) {
+  const game = useGameStore((s) => s.game!);
+  const execute = useGameStore((s) => s.execute);
+  const [units, setUnits] = useState(50);
+  const [mode, setMode] = useState<ShippingMode>('distributor');
+  const [onlyMissing, setOnlyMissing] = useState(true);
+  const bom = billOfMaterials(game, product).filter((item) => !item.sku.inhouseProductId);
+  const lines = kitLines(game, bom, units, mode, onlyMissing);
+  const total = kitTotal(lines);
   const maxLead = lines.reduce((a, l) => Math.max(a, l.quote?.leadTimeDays ?? 0), 0);
+  const affordable = affordableUnits(game, bom, mode, onlyMissing);
 
   const submit = () => {
     const result = execute((d) => {
@@ -118,7 +147,14 @@ function KitOrderModal({ product, onClose }: { product: Product; onClose: () => 
       }
     >
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
-        <Field label="Stückzahl (Geräte)">
+        <Field
+          label="Stückzahl (Geräte)"
+          hint={
+            <button type="button" className="text-muted underline decoration-dotted hover:text-ink" onClick={() => setUnits(Math.max(1, affordable))}>
+              Max. bezahlbar: {formatNumber(affordable)} Geräte (lässt {formatMoney(AUTO_ORDER_RESERVE)} Reserve)
+            </button>
+          }
+        >
           <NumberInput value={units} min={1} step={10} onChange={(v) => setUnits(Math.max(1, Math.floor(v)))} />
         </Field>
         <Field label="Lieferweg">

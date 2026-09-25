@@ -27,7 +27,7 @@ import { DEV_BUDGET_LEVELS, estimateDevQuality, evaluateDesign } from '@/systems
 import { isCategoryUnlocked } from '@/systems/research/effects';
 import { useGameStore } from '@/store/gameStore';
 import type { DevBudgetLevel, ProductCategoryId, SlotKey } from '@/types';
-import { formatMoney, formatNumber, formatPercent } from '@/utils/format';
+import { formatDays, formatMoney, formatNumber, formatPercent } from '@/utils/format';
 import { HOURS_PER_DAY } from '@/data/departments';
 import { departmentCapacity } from '@/systems/workforce/employees';
 
@@ -241,7 +241,7 @@ export default function ProductEditorPage() {
             <div className="divide-y divide-line/50">
               <KeyValue label="Entwicklungsbudget (inkl. Werkzeuge & Zertifizierung)" value={formatMoney(plan.totalBudget)} />
               <KeyValue label="Aufwand" value={`${formatNumber(plan.totalEffort)} Ingenieurstunden`} />
-              <KeyValue label="Geschätzte Dauer" value={estimatedDays ? `ca. ${estimatedDays} Tage` : 'kein Entwicklungsteam'} />
+              <KeyValue label="Geschätzte Dauer" value={estimatedDays ? `ca. ${formatDays(estimatedDays)}` : 'kein Entwicklungsteam'} />
             </div>
             <div className="mt-3 space-y-2">
               {evaluation.errors.map((e) => (

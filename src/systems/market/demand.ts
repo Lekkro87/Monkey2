@@ -340,14 +340,7 @@ function executePlayerSales(state: GameState, product: Product, demand: PlayerDe
 export function simulateMarkets(state: GameState): void {
   const context = createDayContext(state);
   for (const categoryId of CATEGORY_IDS) {
-    const hasOffers =
-      state.products.some((p) => p.category === categoryId && p.status === 'on_sale') ||
-      state.competitors.some((c) => c.products.some((p) => p.active && p.category === categoryId));
-    const market = state.markets[categoryId];
-    if (!hasOffers) {
-      market.dailyDemand = 0;
-      continue;
-    }
+    // Auch ohne Angebote wird simuliert: die Nachfrage geht dann vollständig an andere Hersteller.
     const result = simulateCategory(state, categoryId, context);
     let playerUnits = 0;
     for (const product of state.products) {

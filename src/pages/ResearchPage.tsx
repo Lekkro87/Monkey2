@@ -19,7 +19,7 @@ import { softwareBlocker, startSoftwareProject, totalSubscribers } from '@/syste
 import { departmentHeadcount } from '@/systems/workforce/employees';
 import { useGameStore } from '@/store/gameStore';
 import type { GameState, TechCategory, TechnologyDef } from '@/types';
-import { formatMoney, formatNumber, formatPercent } from '@/utils/format';
+import { formatDays, formatMoney, formatNumber, formatPercent } from '@/utils/format';
 
 type Tab = 'tree' | 'software';
 
@@ -87,7 +87,7 @@ function TechCard({ tech }: { tech: TechnologyDef }) {
           <ProgressBar value={partial} max={tech.cost} height="h-1.5" />
           <div className="mt-0.5 text-[10px] text-muted tabular">
             {formatPercent(partial / tech.cost, 0)}
-            {eta !== null && ` · noch ca. ${formatNumber(eta)} Tage`}
+            {eta !== null && ` · noch ca. ${formatDays(eta)}`}
           </div>
         </div>
       )}
@@ -102,7 +102,7 @@ function TechCard({ tech }: { tech: TechnologyDef }) {
             </Button>
           )}
           {blocker && <span className="text-[11px] text-amber-300">{blocker}</span>}
-          {!blocker && eta !== null && !partial && <span className="text-[11px] text-muted">ca. {formatNumber(eta)} Tage</span>}
+          {!blocker && eta !== null && !partial && <span className="text-[11px] text-muted">ca. {formatDays(eta)}</span>}
         </div>
       )}
     </div>
@@ -279,7 +279,7 @@ export default function ResearchPage() {
                 <span className="tabular">
                   {formatNumber(research.active.progress)} / {formatNumber(activeTech.cost)} Punkte
                 </span>
-                <span>{perDay > 0 ? `noch ca. ${formatNumber(Math.ceil((activeTech.cost - research.active.progress) / perDay))} Tage` : 'keine Forschungskapazität'}</span>
+                <span>{perDay > 0 ? `noch ca. ${formatDays(Math.ceil((activeTech.cost - research.active.progress) / perDay))}` : 'keine Forschungskapazität'}</span>
               </div>
             </div>
           ) : (

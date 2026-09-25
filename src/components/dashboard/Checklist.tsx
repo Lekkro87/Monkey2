@@ -30,7 +30,7 @@ function computeSteps(game: GameState): Step[] {
     { label: 'Produktion starten', done: game.production.lines.some((l) => l.active && l.productId), link: 'production', hint: 'Linie mit Produkt belegen, Auto-Einkauf aktivieren' },
     { label: 'Markteinführung', done: game.products.some((p) => p.launchDay !== undefined), link: 'products', hint: 'Das Produkt in den Verkauf bringen' },
     { label: 'Forschung starten', done: game.research.active !== null || Object.keys(game.research.completed).length > 0, link: 'research', hint: 'z. B. Schlanke Montage' },
-    { label: 'Marketing-Kampagne', done: game.marketing.campaigns.length > 0, link: 'marketing', hint: 'Bekanntheit steigern' },
+    { label: 'Marketing-Kampagne', done: game.marketing.campaigns.length > 0 || game.marketing.spentTotal > 0, link: 'marketing', hint: 'Bekanntheit steigern' },
   ];
 }
 

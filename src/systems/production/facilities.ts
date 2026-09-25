@@ -293,7 +293,7 @@ export function createLine(state: GameState, facilityId: string): ProductionLine
     status: 'idle',
     producedTotal: 0,
     producedLast30: [],
-    autoReorder: false,
+    autoReorder: true,
     reorderDays: 21,
     shippingMode: 'distributor',
   };

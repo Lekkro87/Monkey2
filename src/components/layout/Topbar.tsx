@@ -28,11 +28,11 @@ export function Topbar({ onToggleMenu }: { onToggleMenu: () => void }) {
   const saving = useGameStore((s) => s.saving);
 
   return (
-    <header className="sticky top-0 z-50 flex h-16 items-center gap-3 border-b border-line bg-[#0a0f1f]/90 px-3 backdrop-blur md:px-5">
+    <header className="sticky top-0 z-50 flex h-16 items-center gap-2 border-b border-line bg-[#0a0f1f]/90 px-2 backdrop-blur sm:gap-3 sm:px-3 md:px-5">
       <button type="button" className="rounded-md p-2 text-muted hover:bg-white/5 lg:hidden" onClick={onToggleMenu} aria-label="Menü">
         <Menu size={18} />
       </button>
-      <button type="button" onClick={() => navigate('/game/company')} className="flex min-w-0 items-center gap-2.5 text-left">
+      <button type="button" onClick={() => navigate('/game/company')} className="hidden min-w-0 items-center gap-2.5 text-left sm:flex">
         <CompanyLogo logo={logo} color={color} size={34} />
         <div className="hidden min-w-0 sm:block">
           <div className="truncate text-sm font-bold">{name}</div>
@@ -63,7 +63,7 @@ export function Topbar({ onToggleMenu }: { onToggleMenu: () => void }) {
               type="button"
               title={`${value}× (Taste ${index + 1})`}
               onClick={() => setSpeed(value)}
-              className={clsx('flex h-8 min-w-9 items-center justify-center rounded-lg px-1.5 text-xs font-bold transition', speed === value ? 'accent-bg text-white' : 'text-muted hover:text-ink')}
+              className={clsx('h-8 min-w-8 items-center justify-center rounded-lg px-1.5 text-xs font-bold transition sm:min-w-9', value === 2 || value === 10 ? 'hidden sm:flex' : 'flex', speed === value ? 'accent-bg text-white' : 'text-muted hover:text-ink')}
             >
               {value === 20 ? <FastForward size={14} /> : `${value}×`}
             </button>
@@ -84,7 +84,7 @@ export function Topbar({ onToggleMenu }: { onToggleMenu: () => void }) {
         )}
         <div className="text-right" title={formatMoney(cash)}>
           <div className="text-[11px] text-muted">Kapital</div>
-          <div className={clsx('text-sm font-bold tabular', cash < 0 ? 'text-red-400' : 'text-ink')}>{formatMoneyCompact(cash)}</div>
+          <div className={clsx('text-sm font-bold whitespace-nowrap tabular', cash < 0 ? 'text-red-400' : 'text-ink')}>{formatMoneyCompact(cash)}</div>
         </div>
         <button
           type="button"

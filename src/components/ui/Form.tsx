@@ -4,7 +4,7 @@ import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react
 export function Field({ label, hint, children, className }: { label: ReactNode; hint?: ReactNode; children: ReactNode; className?: string }) {
   return (
     <label className={clsx('block space-y-1.5', className)}>
-      <span className="text-xs font-medium text-muted">{label}</span>
+      <span className="block text-xs font-medium text-muted">{label}</span>
       {children}
       {hint && <span className="block text-[11px] text-muted/80">{hint}</span>}
     </label>
@@ -51,9 +51,9 @@ export function Toggle({ checked, onChange, label, disabled }: { checked: boolea
       aria-checked={checked}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className={clsx('inline-flex items-center gap-2 text-sm', disabled && 'opacity-40')}
+      className={clsx('inline-flex items-center gap-2 text-left text-sm', disabled && 'opacity-40')}
     >
-      <span className={clsx('relative inline-block h-5 w-9 rounded-full transition', checked ? 'accent-bg' : 'bg-white/15')}>
+      <span className={clsx('relative inline-block h-5 w-9 shrink-0 rounded-full transition', checked ? 'accent-bg' : 'bg-white/15')}>
         <span className={clsx('absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all', checked ? 'left-[18px]' : 'left-0.5')} />
       </span>
       {label && <span className="text-muted">{label}</span>}
@@ -63,7 +63,7 @@ export function Toggle({ checked, onChange, label, disabled }: { checked: boolea
 
 export function Segmented<T extends string | number>({ value, options, onChange, size = 'sm' }: { value: T; options: { value: T; label: ReactNode; disabled?: boolean }[]; onChange: (value: T) => void; size?: 'xs' | 'sm' }) {
   return (
-    <div className="inline-flex rounded-lg border border-line bg-surface/60 p-0.5">
+    <div className="inline-flex max-w-full flex-wrap rounded-lg border border-line bg-surface/60 p-0.5">
       {options.map((option) => (
         <button
           key={String(option.value)}

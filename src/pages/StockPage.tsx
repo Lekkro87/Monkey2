@@ -72,44 +72,46 @@ function CompetitorQuotes() {
   const game = useGameStore((s) => s.game!);
   return (
     <Card title="Börsennotierte Konkurrenten" icon={<CandlestickChart size={16} />} bodyClassName="p-0">
-      <table className="w-full text-sm">
-        <thead className="bg-panel-2 text-xs text-muted">
-          <tr>
-            <th className="px-4 py-2 text-left font-medium">Unternehmen</th>
-            <th className="px-3 py-2 text-right font-medium">Aktie</th>
-            <th className="px-3 py-2 text-right font-medium">Börsenwert</th>
-            <th className="px-3 py-2 text-right font-medium">Umsatz/Monat</th>
-          </tr>
-        </thead>
-        <tbody>
-          {game.competitors.map((c) => (
-            <tr key={c.id} className="border-t border-line/50">
-              <td className="px-4 py-2">
-                <span className="inline-flex items-center gap-2 font-medium">
-                  <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: OWNER_COLORS[c.id] }} />
-                  {c.name}
-                </span>
-              </td>
-              <td className="px-3 py-2 text-right tabular">{formatMoney(c.sharePrice, 2)}</td>
-              <td className="px-3 py-2 text-right tabular">{formatMoneyCompact(c.valuation)}</td>
-              <td className="px-3 py-2 text-right tabular">{formatMoneyCompact(c.revenueLastMonth)}</td>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-panel-2 text-xs text-muted">
+            <tr>
+              <th className="px-4 py-2 text-left font-medium">Unternehmen</th>
+              <th className="px-3 py-2 text-right font-medium">Aktie</th>
+              <th className="px-3 py-2 text-right font-medium">Börsenwert</th>
+              <th className="px-3 py-2 text-right font-medium">Umsatz/Monat</th>
             </tr>
-          ))}
-          {game.finance.stock.isPublic && (
-            <tr className="border-t border-line bg-white/[0.02]">
-              <td className="px-4 py-2">
-                <span className="inline-flex items-center gap-2 font-semibold">
-                  <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: OWNER_COLORS.player }} />
-                  {game.company.name}
-                </span>
-              </td>
-              <td className="px-3 py-2 text-right tabular">{formatMoney(game.finance.stock.sharePrice, 2)}</td>
-              <td className="px-3 py-2 text-right tabular">{formatMoneyCompact(game.finance.stock.sharePrice * game.finance.stock.totalShares)}</td>
-              <td className="px-3 py-2 text-right tabular">{formatMoneyCompact(game.finance.months[game.finance.months.length - 1]?.revenue ?? 0)}</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {game.competitors.map((c) => (
+              <tr key={c.id} className="border-t border-line/50">
+                <td className="px-4 py-2">
+                  <span className="inline-flex items-center gap-2 font-medium">
+                    <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: OWNER_COLORS[c.id] }} />
+                    {c.name}
+                  </span>
+                </td>
+                <td className="px-3 py-2 text-right tabular">{formatMoney(c.sharePrice, 2)}</td>
+                <td className="px-3 py-2 text-right tabular">{formatMoneyCompact(c.valuation)}</td>
+                <td className="px-3 py-2 text-right tabular">{formatMoneyCompact(c.revenueLastMonth)}</td>
+              </tr>
+            ))}
+            {game.finance.stock.isPublic && (
+              <tr className="border-t border-line bg-white/[0.02]">
+                <td className="px-4 py-2">
+                  <span className="inline-flex items-center gap-2 font-semibold">
+                    <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: OWNER_COLORS.player }} />
+                    {game.company.name}
+                  </span>
+                </td>
+                <td className="px-3 py-2 text-right tabular">{formatMoney(game.finance.stock.sharePrice, 2)}</td>
+                <td className="px-3 py-2 text-right tabular">{formatMoneyCompact(game.finance.stock.sharePrice * game.finance.stock.totalShares)}</td>
+                <td className="px-3 py-2 text-right tabular">{formatMoneyCompact(game.finance.months[game.finance.months.length - 1]?.revenue ?? 0)}</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </Card>
   );
 }

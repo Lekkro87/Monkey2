@@ -368,26 +368,28 @@ function InvestorsTab() {
         )}
       </Card>
       <Card title="Gesellschafter" subtitle={`Gründer:in hält ${formatPercent(founderShare(game))} der Anteile.`} bodyClassName="p-0">
-        <table className="w-full text-sm">
-          <thead className="bg-panel-2 text-xs text-muted">
-            <tr>
-              <th className="px-4 py-2 text-left font-medium">Gesellschafter</th>
-              <th className="px-3 py-2 text-right font-medium">Anteil</th>
-              <th className="px-3 py-2 text-right font-medium">Investiert</th>
-              <th className="px-3 py-2 text-right font-medium">Seit</th>
-            </tr>
-          </thead>
-          <tbody>
-            {game.finance.shareholders.map((holder) => (
-              <tr key={holder.id} className="border-t border-line/50">
-                <td className="px-4 py-2">{holder.id === 'founder' ? `${game.company.ceoName} (Gründer:in)` : holder.name}</td>
-                <td className="px-3 py-2 text-right tabular">{formatPercent(holder.shares / stock.totalShares)}</td>
-                <td className="px-3 py-2 text-right tabular">{formatMoney(holder.invested)}</td>
-                <td className="px-3 py-2 text-right text-xs text-muted">{formatShortDate(holder.day)}</td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-panel-2 text-xs text-muted">
+              <tr>
+                <th className="px-4 py-2 text-left font-medium">Gesellschafter</th>
+                <th className="px-3 py-2 text-right font-medium">Anteil</th>
+                <th className="px-3 py-2 text-right font-medium">Investiert</th>
+                <th className="px-3 py-2 text-right font-medium">Seit</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {game.finance.shareholders.map((holder) => (
+                <tr key={holder.id} className="border-t border-line/50">
+                  <td className="px-4 py-2">{holder.id === 'founder' ? `${game.company.ceoName} (Gründer:in)` : holder.name}</td>
+                  <td className="px-3 py-2 text-right tabular">{formatPercent(holder.shares / stock.totalShares)}</td>
+                  <td className="px-3 py-2 text-right tabular">{formatMoney(holder.invested)}</td>
+                  <td className="px-3 py-2 text-right text-xs text-muted">{formatShortDate(holder.day)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </Card>
     </div>
   );
