@@ -7,7 +7,7 @@ import { ipoBlockers } from '@/systems/finance/stock';
 import { quoteLoan, takeLoan } from '@/systems/finance/loans';
 import { clearProductStock, sellComponents } from '@/systems/inventory/inventory';
 import { OTHER_OWNER } from '@/systems/market/demand';
-import { createProductDraft, resolveTemplateComponents } from '@/systems/products/commands';
+import { createProductDraft, createSuccessor, resolveTemplateComponents, successorName } from '@/systems/products/commands';
 import { evaluateDesign } from '@/systems/products/design';
 import { configureLine, upgradeWorkshopTools } from '@/systems/production/facilities';
 import { techEffects } from '@/systems/research/effects';
@@ -67,6 +67,30 @@ describe('Produktdesign', () => {
       expect(evaluation.errors, template).toEqual([]);
       expect(evaluation.unitCost).toBeGreaterThan(0);
     }
+  });
+});
+
+describe('Nachfolgemodelle', () => {
+  it('ersetzt nicht mehr lieferbare Komponenten und vergibt saubere Namen', () => {
+    let state = newTestGame('normal', 23);
+    const draft = draftFromTemplate(state, 'novastation_basic', 'desktop');
+    const oldCpu = draft.state.products.find((p) => p.id === draft.id)!.components.cpu!;
+    // Testabkürzung: Produkt im Handel, CPU-Modell eingestellt.
+    state = exec(draft.state, (d) => {
+      d.products.find((p) => p.id === draft.id)!.status = 'on_sale';
+      d.components.market[oldCpu].status = 'discontinued';
+    });
+    let successorId = '';
+    state = exec(state, (d) => {
+      successorId = createSuccessor(d, draft.id);
+    });
+    const successor = state.products.find((p) => p.id === successorId)!;
+    expect(successor.predecessorId).toBe(draft.id);
+    expect(successor.name).toBe('Testprodukt (2026)');
+    expect(successor.components.cpu).not.toBe(oldCpu);
+    expect(state.components.market[successor.components.cpu!].status).toBe('active');
+    expect(evaluateDesign(state, 'desktop', successor.components, 55).valid).toBe(true);
+    expect(successorName(state, 'Testprodukt (2026)')).toBe('Testprodukt (2026) v2');
   });
 });
 

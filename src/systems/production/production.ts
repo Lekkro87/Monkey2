@@ -51,7 +51,12 @@ export function componentShortages(state: GameState, product: Product, units: nu
   return shortages.sort((a, b) => b.missing - a.missing);
 }
 
-function describeShortage(shortages: Shortage[]): string {
+function describeShortage(state: GameState, shortages: Shortage[]): string {
+  // Nicht mehr lieferbare Teile zuerst nennen – dort hilft nur ein Nachfolgemodell.
+  const discontinued = shortages.find((s) => !s.sku.inhouseProductId && state.components.market[s.sku.id]?.status === 'discontinued');
+  if (discontinued) {
+    return `Produktion gestoppt: ${discontinued.sku.name} wird nicht mehr hergestellt – entwickle einen Nachfolger mit aktuellen Komponenten.`;
+  }
   const first = shortages[0];
   const more = shortages.length > 1 ? ` (+${shortages.length - 1} weitere Komponenten)` : '';
   return `Produktion gestoppt: ${first.missing.toLocaleString('de-DE')} × ${first.sku.name} fehlen${more}.`;
@@ -138,7 +143,7 @@ function runLine(state: GameState, line: ProductionLine, product: Product, alloc
       line.stallReason = 'Lagerkapazität erreicht – Produktion pausiert. Lager erweitern oder Bestand abbauen.';
     } else {
       const weekly = Math.max(units, Math.round((allocated / unitCost) * 7));
-      line.stallReason = describeShortage(componentShortages(state, product, weekly));
+      line.stallReason = describeShortage(state, componentShortages(state, product, weekly));
     }
     return 0;
   }
@@ -153,7 +158,7 @@ function runLine(state: GameState, line: ProductionLine, product: Product, alloc
     line.status = 'stalled';
     line.stallReason = storageLimited
       ? 'Lagerkapazität erreicht – Produktion gedrosselt.'
-      : describeShortage(componentShortages(state, product, Math.max(units, Math.round((allocated / unitCost) * 7))));
+      : describeShortage(state, componentShortages(state, product, Math.max(units, Math.round((allocated / unitCost) * 7))));
   } else {
     line.status = 'running';
     line.stallReason = undefined;

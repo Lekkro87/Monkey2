@@ -4,9 +4,9 @@ import { PLAYER_MANUFACTURER_ID } from '@/data/manufacturers';
 import { PRODUCT_TEMPLATES } from '@/data/templates';
 import { CommandError, ensure, nextId } from '@/simulation/commands';
 import { addNews } from '@/simulation/news';
-import type { ComponentSku, DevBudgetLevel, GameState, Priority, Product, ProductCategoryId, ProductSalesStats, SlotKey } from '@/types';
-import { latestSkuForModel } from '@/systems/components/catalog';
-import { isCategoryUnlocked, techEffects } from '@/systems/research/effects';
+import type { CategorySlot, ComponentSku, DevBudgetLevel, GameState, Priority, Product, ProductCategoryId, ProductSalesStats, SlotKey } from '@/types';
+import { latestSkuForModel, skuPriceEur } from '@/systems/components/catalog';
+import { hasTech, isCategoryUnlocked, techEffects } from '@/systems/research/effects';
 import { departmentCapacity } from '@/systems/workforce/employees';
 import { DEV_BUDGET_LEVELS, estimateDevQuality, evaluateDesign } from './design';
 
@@ -60,7 +60,7 @@ export interface ProductDraftInput {
   predecessorId?: string;
 }
 
-function validateDraft(state: GameState, input: ProductDraftInput, ignoreId?: string): void {
+function validateDraft(state: GameState, input: ProductDraftInput, ignoreId?: string, checkDesign = true): void {
   const name = input.name.trim();
   ensure(name.length >= 2, 'Bitte einen Produktnamen mit mindestens 2 Zeichen angeben.');
   ensure(name.length <= 40, 'Der Produktname ist zu lang (max. 40 Zeichen).');
@@ -70,12 +70,17 @@ function validateDraft(state: GameState, input: ProductDraftInput, ignoreId?: st
   );
   ensure(isCategoryUnlocked(state, input.category), `${CATEGORIES[input.category].pluralName} müssen zuerst erforscht werden.`);
   ensure(Number.isFinite(input.price) && input.price > 0, 'Bitte einen gültigen Verkaufspreis angeben.');
+  if (!checkDesign) return;
   const evaluation = evaluateDesign(state, input.category, input.components, estimateDevQuality(state, input.devBudgetLevel));
   if (!evaluation.valid) throw new CommandError(evaluation.errors[0].message);
 }
 
-export function createProductDraft(state: GameState, input: ProductDraftInput): string {
-  validateDraft(state, input);
+/**
+ * Legt einen Entwurf an. Mit `allowInvalidDesign` darf der Entwurf noch Fehler enthalten
+ * (z. B. automatisch erzeugte Nachfolger) – die Entwicklung startet erst mit gültigem Design.
+ */
+export function createProductDraft(state: GameState, input: ProductDraftInput, options: { allowInvalidDesign?: boolean } = {}): string {
+  validateDraft(state, input, undefined, !options.allowInvalidDesign);
   const devQuality = estimateDevQuality(state, input.devBudgetLevel);
   const evaluation = evaluateDesign(state, input.category, input.components, devQuality);
   const predecessor = input.predecessorId ? state.products.find((p) => p.id === input.predecessorId) : undefined;
@@ -239,34 +244,89 @@ export function setDevelopmentPriority(state: GameState, productId: string, prio
 }
 
 /** Legt eine überarbeitete Version eines Produkts an (aktuelle Komponenten, 45 % Entwicklungsaufwand). */
+/** Aktuell lieferbare Komponenten für einen Slot (ohne Eigenentwicklungen). */
+function activeSkusForSlot(state: GameState, slot: CategorySlot): ComponentSku[] {
+  return Object.values(state.components.skus).filter(
+    (sku) =>
+      sku.type === slot.type &&
+      slot.formFactors.includes(sku.formFactor) &&
+      !sku.inhouseProductId &&
+      state.components.market[sku.id]?.status === 'active' &&
+      hasTech(state, sku.requiredTech),
+  );
+}
+
+/** Gleichwertiger Ersatz für ein ausgelaufenes Modell: ähnliche Leistung, gleiche Klasse, bevorzugt gleicher Hersteller. */
+function replacementFor(state: GameState, slot: CategorySlot, current: ComponentSku): ComponentSku | undefined {
+  const score = (sku: ComponentSku) =>
+    Math.abs(sku.performance - current.performance) / Math.max(1, current.performance) + (sku.tier !== current.tier ? 0.3 : 0) + (sku.manufacturerId !== current.manufacturerId ? 0.1 : 0);
+  return activeSkusForSlot(state, slot).sort((a, b) => score(a) - score(b))[0];
+}
+
+/** Behebt Designfehler einzelner Slots (z. B. zu schwaches Netzteil) mit der günstigsten passenden Komponente. */
+function repairDesign(state: GameState, categoryId: ProductCategoryId, components: Partial<Record<SlotKey, string>>, devQuality: number): Partial<Record<SlotKey, string>> {
+  const category = CATEGORIES[categoryId];
+  let current = { ...components };
+  for (let round = 0; round < 3; round++) {
+    const evaluation = evaluateDesign(state, categoryId, current, devQuality);
+    const slotErrors = [...new Set(evaluation.errors.map((e) => e.slot).filter((slot): slot is SlotKey => !!slot))];
+    if (evaluation.valid || slotErrors.length === 0) break;
+    for (const slotKey of slotErrors) {
+      const slot = category.slots.find((sl) => sl.key === slotKey);
+      if (!slot) continue;
+      const candidates = activeSkusForSlot(state, slot).sort((a, b) => skuPriceEur(state, a) - skuPriceEur(state, b));
+      const fix = candidates.find((sku) => !evaluateDesign(state, categoryId, { ...current, [slotKey]: sku.id }, devQuality).errors.some((e) => e.slot === slotKey));
+      if (fix) current = { ...current, [slotKey]: fix.id };
+    }
+  }
+  return current;
+}
+
+/** Name des Nachfolgers: „Basis (Jahr)“, bei mehreren Versionen im selben Jahr „Basis (Jahr) v2“. */
+export function successorName(state: GameState, name: string): string {
+  const baseName = name.replace(/(\s(\(\d{4}\)|v\d+))+$/, '').trim() || name;
+  const year = 2026 + Math.floor(state.time.day / 365);
+  const taken = (candidate: string) => state.products.some((p) => p.name.toLowerCase() === candidate.toLowerCase());
+  let candidate = `${baseName} (${year})`;
+  for (let version = 2; taken(candidate); version++) candidate = `${baseName} (${year}) v${version}`;
+  return candidate;
+}
+
 export function createSuccessor(state: GameState, productId: string): string {
   const product = findProduct(state, productId);
   ensure(product.status !== 'draft' && product.status !== 'development', 'Nur fertige Produkte können überarbeitet werden.');
-  const components: Partial<Record<SlotKey, string>> = {};
-  for (const [slot, skuIdValue] of Object.entries(product.components) as [SlotKey, string][]) {
+  const category = CATEGORIES[product.category];
+  let components: Partial<Record<SlotKey, string>> = {};
+  for (const [slotKey, skuIdValue] of Object.entries(product.components) as [SlotKey, string][]) {
     const sku = state.components.skus[skuIdValue];
     if (!sku) continue;
     if (sku.inhouseProductId) {
-      components[slot] = sku.id;
+      components[slotKey] = sku.id;
       continue;
     }
     const modelKey = sku.id.split('.').slice(-2, -1)[0];
-    components[slot] = latestSkuForModel(state, sku.familyId, modelKey)?.id ?? sku.id;
+    let next = latestSkuForModel(state, sku.familyId, modelKey) ?? sku;
+    if (state.components.market[next.id]?.status !== 'active') {
+      const slot = category.slots.find((sl) => sl.key === slotKey);
+      next = (slot && replacementFor(state, slot, next)) ?? next;
+    }
+    components[slotKey] = next.id;
   }
-  const baseName = product.name.replace(/\s\(\d{4}\)$/, '');
-  const year = 2026 + Math.floor(state.time.day / 365);
-  let name = `${baseName} (${year})`;
-  let counter = 2;
-  while (state.products.some((p) => p.name === name)) name = `${baseName} (${year}) ${counter++}`;
-  return createProductDraft(state, {
-    name,
-    category: product.category,
-    components,
-    price: product.price,
-    devBudgetLevel: product.devBudgetLevel,
-    predecessorId: product.id,
-    templateId: product.templateId,
-  });
+  const devQuality = estimateDevQuality(state, product.devBudgetLevel);
+  components = repairDesign(state, product.category, components, devQuality);
+  return createProductDraft(
+    state,
+    {
+      name: successorName(state, product.name),
+      category: product.category,
+      components,
+      price: product.price,
+      devBudgetLevel: product.devBudgetLevel,
+      predecessorId: product.id,
+      templateId: product.templateId,
+    },
+    { allowInvalidDesign: true },
+  );
 }
 
 export function developmentPlan(state: GameState, product: Pick<Product, 'category' | 'devBudgetLevel' | 'predecessorId'>): { totalEffort: number; totalBudget: number } {
